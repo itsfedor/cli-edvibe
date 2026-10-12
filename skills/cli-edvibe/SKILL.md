@@ -1,27 +1,28 @@
 ---
-name: "cli-anything-edvibe"
+name: "cli-edvibe"
 description: "Use when creating, listing or importing Edvibe (edvibe.com) school materials programmatically — materials, lessons (units), HTML note content. Never deletes anything."
 ---
 
-# cli-anything-edvibe
+# cli-edvibe
 
-CLI harness over Edvibe's private WebSocket RPC API for school materials.
-Install: `pip install -e .` from the repo root.
+Unofficial CLI for Edvibe's private WebSocket RPC API — school materials.
+Install: `pipx install git+https://github.com/itsfedor/cli-edvibe`
+(or `pip install -e .` from the repo root).
 Credentials: `EDVIBE_EMAIL` / `EDVIBE_PASSWORD` env or `--email/--password`
 (session token cached in `~/.edvibe/session.json`, mode 600).
 
 ## Commands
 
-- `cli-anything-edvibe whoami`
-- `cli-anything-edvibe materials list [--json]` — folders & books
-- `cli-anything-edvibe materials create "Name" [--description ...]`
-- `cli-anything-edvibe lesson add --material <bookId> --name "Unit 1"`
+- `cli-edvibe whoami`
+- `cli-edvibe materials list [--json]` — folders & books
+- `cli-edvibe materials create "Name" [--description ...]`
+- `cli-edvibe lesson add --material <bookId> --name "Unit 1"`
   → prints lesson_id + auto section_id
-- `cli-anything-edvibe lesson show --lesson <id>` — sections + exercises
-- `cli-anything-edvibe content add-note --lesson <id> --section <id> --file f.html`
-- `cli-anything-edvibe import --html handout.html` — HTML file → new material
+- `cli-edvibe lesson show --lesson <id>` — sections + exercises
+- `cli-edvibe content add-note --lesson <id> --section <id> --file f.html`
+- `cli-edvibe import --html handout.html` — HTML file → new material
   with one lesson containing one Note per <h2> section (h1 title dropped)
-- bare `cli-anything-edvibe` starts a REPL
+- bare `cli-edvibe` starts a REPL
 
 Add `--json` for machine-readable output.
 

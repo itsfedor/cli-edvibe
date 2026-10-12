@@ -1,11 +1,33 @@
-from setuptools import setup, find_namespace_packages
+import pathlib
+
+from setuptools import setup, find_packages
+
+_here = pathlib.Path(__file__).parent
+_long = (_here / "README.md").read_text(encoding="utf-8")
+
 
 setup(
-    name="cli-anything-edvibe",
-    version="0.3.0",
-    description="CLI-Anything harness for edvibe.com (materials/lessons over the Edvibe WebSocket RPC API)",
-    packages=find_namespace_packages(include=["cli_anything.*"]),
+    name="cli-edvibe",
+    version="1.0.0",
+    description="Unofficial CLI for edvibe.com: lessons, homework and materials over the reverse-engineered WebSocket RPC",
+    long_description=_long,
+    long_description_content_type="text/markdown",
+    author="Fedor Molodtsov",
+    url="https://github.com/itsfedor/cli-edvibe",
+    license="MIT",
+    packages=find_packages(include=["cli_edvibe*"]),
     python_requires=">=3.9",
     install_requires=["requests>=2.28", "websocket-client>=1.6", "click>=8.0"],
-    entry_points={"console_scripts": ["cli-anything-edvibe=cli_anything.edvibe.edvibe_cli:cli"]},
+    entry_points={
+        "console_scripts": [
+            "cli-edvibe=cli_edvibe.edvibe_cli:cli",
+            # legacy name (pre-1.0), kept as an alias so existing scripts keep working
+            "cli-anything-edvibe=cli_edvibe.edvibe_cli:cli",
+        ],
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
 )

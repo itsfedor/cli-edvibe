@@ -1,4 +1,4 @@
-"""cli-anything-edvibe — Click CLI for edvibe.com materials.
+"""cli-edvibe — Click CLI for edvibe.com materials.
 
 One-shot subcommands plus a REPL when invoked without a subcommand; --json for
 machine-readable output. Credentials: --email/--password or EDVIBE_EMAIL /
@@ -14,6 +14,7 @@ import time
 
 import click
 
+from . import __version__
 from .core.client import SESSION_DEFAULT, EdvibeError, EdvibeSession
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
@@ -45,13 +46,14 @@ def emit(ctx, data, human=None):
 
 # ---------------------------------------------------------------------- CLI
 @click.group(invoke_without_command=True, context_settings=CONTEXT_SETTINGS)
+@click.version_option(__version__, prog_name="cli-edvibe")
 @click.option("--email", envvar="EDVIBE_EMAIL", help="Edvibe login email")
 @click.option("--password", envvar="EDVIBE_PASSWORD", help="Edvibe password")
 @click.option("--session", default=None, help="Session cache path (default ~/.edvibe/session.json)")
 @click.option("--json", "as_json", is_flag=True, help="Machine-readable JSON output")
 @click.pass_context
 def cli(ctx, email, password, session, as_json):
-    """CLI-Anything harness for edvibe.com (materials & lessons)."""
+    """Unofficial CLI for edvibe.com - materials, lessons and homework."""
     ctx.ensure_object(dict)
     ctx.obj["email"] = email
     ctx.obj["password"] = password
@@ -157,7 +159,7 @@ def doctor(ctx):
         lines = [f"[{'OK' if c['ok'] else 'FAIL'}] {c['check']}: {c['detail']}"
                  for c in d["checks"]]
         if not d["ok"]:
-            lines.append("Fix: run `cli-anything-edvibe login` in your own terminal.")
+            lines.append("Fix: run `cli-edvibe login` in your own terminal.")
         return "\n".join(lines)
 
     emit(ctx, {"ok": ok, "checks": checks}, human=_fmt)
@@ -753,7 +755,7 @@ def _fmt_import(d):
 @click.pass_context
 def repl(ctx):
     """Interactive REPL (default when no subcommand is given)."""
-    click.echo("cli-anything-edvibe REPL — type a command, 'help' or 'exit'.")
+    click.echo("cli-edvibe REPL — type a command, 'help' or 'exit'.")
     while True:
         try:
             line = input("edvibe> ").strip()

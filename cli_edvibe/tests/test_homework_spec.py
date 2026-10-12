@@ -11,8 +11,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from cli_anything.edvibe.core import homework_spec as HS  # noqa: E402
-from cli_anything.edvibe.core import lesson_spec as LS  # noqa: E402
+from cli_edvibe.core import homework_spec as HS  # noqa: E402
+from cli_edvibe.core import lesson_spec as LS  # noqa: E402
 
 
 def base_spec():

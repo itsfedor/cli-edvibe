@@ -1,18 +1,20 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
-  <img alt="cli-anything-edvibe — a reverse-engineered Edvibe CLI for lessons and homework — by Fedor Molodtsov" src="assets/banner-light.png" width="100%">
+  <img alt="cli-edvibe — a reverse-engineered Edvibe CLI for lessons and homework — by Fedor Molodtsov" src="assets/banner-light.png" width="100%">
 </picture>
 
 <p align="center"><sub><b>Fedor Molodtsov</b> — AI automation engineer · <a href="https://github.com/itsfedor">github.com/itsfedor</a></sub></p>
 
-# ⌨️ cli-anything-edvibe: drive Edvibe from your terminal
+# ⌨️ cli-edvibe: drive Edvibe from your terminal
 
 **A reverse-engineered CLI for [edvibe.com](https://edvibe.com) — the ESL teaching platform with no public API.**
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=fff)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-20%20(15%20offline%20%2B%205%20live)-2ea043.svg)](#tests)
-[![Bundles an agent skill](https://img.shields.io/badge/bundles-agent%20skill-0075de.svg)](skills/cli-anything-edvibe/SKILL.md)
+[![Bundles an agent skill](https://img.shields.io/badge/bundles-agent%20skill-0075de.svg)](skills/cli-edvibe/SKILL.md)
+
+> **Note:** v1.0.0 renamed the project to **`cli-edvibe`** (previously `cli-anything-edvibe`). The old command name still works as an alias.
 
 Edvibe (formerly ProgressMe) keeps everything — materials, lessons, students,
 homework — behind a **private WebSocket RPC gateway**; there is no official API.
@@ -28,28 +30,28 @@ blocks, answer keys and per-student homework are all created through it.
 Requires **Python 3.9+**. No Node, no server, no extras.
 
 ```bash
-git clone https://github.com/itsfedor/cli-anything-edvibe
-cd cli-anything-edvibe
+git clone https://github.com/itsfedor/cli-edvibe
+cd cli-edvibe
 pip install -e .
 ```
 
 Or as a one-liner with [pipx](https://pipx.pypa.io):
 
 ```bash
-pipx install git+https://github.com/itsfedor/cli-anything-edvibe
+pipx install git+https://github.com/itsfedor/cli-edvibe
 ```
 
 Check the setup:
 
 ```bash
-cli-anything-edvibe doctor
+cli-edvibe doctor
 ```
 
 Then log in once — the session token is cached at `~/.edvibe/session.json`
 (mode 600); your password is never stored and never leaves your machine:
 
 ```bash
-cli-anything-edvibe login        # asks for email + hidden password
+cli-edvibe login        # asks for email + hidden password
 ```
 
 Non-interactive alternative for scripts:
@@ -72,7 +74,7 @@ lesson guide becomes a material with one lesson and one content block per
 `<h2>` section — headings, lists, tables all preserved:
 
 ```bash
-cli-anything-edvibe --json import --html "handout.html"
+cli-edvibe --json import --html "handout.html"
 ```
 
 **2 · Build a complete lesson from a JSON spec.** Sections and exercises of
@@ -80,8 +82,8 @@ cli-anything-edvibe --json import --html "handout.html"
 word order, ...), with dry-run validation first:
 
 ```bash
-cli-anything-edvibe lesson build --file lesson-spec.json --material 12345 --dry-run
-cli-anything-edvibe lesson build --file lesson-spec.json --material 12345
+cli-edvibe lesson build --file lesson-spec.json --material 12345 --dry-run
+cli-edvibe lesson build --file lesson-spec.json --material 12345
 ```
 
 **3 · Give homework.** Append exercises to one student's homework sheet —
@@ -89,28 +91,28 @@ numbering continues after the current last task, and nothing existing is
 touched:
 
 ```bash
-cli-anything-edvibe homework add --file homework-spec.json --dry-run   # plan only
-cli-anything-edvibe homework add --file homework-spec.json             # attach
+cli-edvibe homework add --file homework-spec.json --dry-run   # plan only
+cli-edvibe homework add --file homework-spec.json             # attach
 ```
 
 **4 · Inspect the class (read-only).** Find a student, open their classroom,
 read the current homework sheet:
 
 ```bash
-cli-anything-edvibe students list --search "Ann"
-cli-anything-edvibe classroom show --student "Ann"
-cli-anything-edvibe homework show --lesson 12345678 --pupil 23456789 --class-id 34567890
+cli-edvibe students list --search "Ann"
+cli-edvibe classroom show --student "Ann"
+cli-edvibe homework show --lesson 12345678 --pupil 23456789 --class-id 34567890
 ```
 
 **5 · Let your AI agent drive it.** The repo bundles an
-[agent skill](skills/cli-anything-edvibe/SKILL.md) (agentskills.io format) that
+[agent skill](skills/cli-edvibe/SKILL.md) (agentskills.io format) that
 teaches Hermes Agent, Claude Code or Codex the whole workflow — lessons and
 homework get built from chat while this CLI does the talking.
 
 ## How it works
 
 <p align="center">
-  <img src="assets/how-it-works.png" alt="How it works: your agent → cli-anything-edvibe → WebSocket RPC → your Edvibe account" width="100%" />
+  <img src="assets/how-it-works.png" alt="How it works: your agent → cli-edvibe → WebSocket RPC → your Edvibe account" width="100%" />
 </p>
 
 - **Transport** — WebSocket `wss://proxy-a.edvibe.com/websocket?token=...`;
@@ -145,7 +147,7 @@ in [`EDVIBE.md`](EDVIBE.md).
 | `homework attach --lesson ID --pupil ID --class-id ID [--section ID]` | attach existing lesson exercises |
 | `homework give --lesson ID --class-id ID [--pupil ID]` | give homework end-to-end |
 
-Add `--json` anywhere for machine-readable output. Bare `cli-anything-edvibe`
+Add `--json` anywhere for machine-readable output. Bare `cli-edvibe`
 opens a REPL.
 
 ## Specs
@@ -182,8 +184,8 @@ Exercise types: `note`, `text`, `topic`, `video`, `wordlist`, `writing`,
 `match`, `filltyped`, `fillbox`, `chooseoption`, `wordorder`, `sortcolumns`,
 `ordersentences`, `truefalse`, `test`, `voice`, `button` (aliases like `tf`,
 `quiz`, `gaps` also work). Full details in
-[`lesson_spec.py`](cli_anything/edvibe/core/lesson_spec.py) and
-[`homework_spec.py`](cli_anything/edvibe/core/homework_spec.py).
+[`lesson_spec.py`](cli_edvibe/core/lesson_spec.py) and
+[`homework_spec.py`](cli_edvibe/core/homework_spec.py).
 
 ## Safety
 
@@ -199,16 +201,16 @@ Exercise types: `note`, `text`, `topic`, `video`, `wordlist`, `writing`,
 ## Tests
 
 ```bash
-python -m pytest cli_anything/edvibe/tests/test_core.py \
-                 cli_anything/edvibe/tests/test_homework_spec.py -q   # 15 offline tests
+python -m pytest cli_edvibe/tests/test_core.py \
+                 cli_edvibe/tests/test_homework_spec.py -q   # 15 offline tests
 
 EDVIBE_EMAIL=... EDVIBE_PASSWORD=... \
-  python -m pytest cli_anything/edvibe/tests/test_full_e2e.py -v      # 5 live tests
+  python -m pytest cli_edvibe/tests/test_full_e2e.py -v      # 5 live tests
 ```
 
 The live suite runs against your own account and creates only fresh
 `CLI-HARNESS-E2E` objects. Test history and the pre-implementation test plan
-are in [`tests/TEST.md`](cli_anything/edvibe/tests/TEST.md).
+are in [`tests/TEST.md`](cli_edvibe/tests/TEST.md).
 
 ## A note on the platform
 

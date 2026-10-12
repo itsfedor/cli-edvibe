@@ -1,4 +1,4 @@
-# TEST.md — cli-anything-edvibe
+# TEST.md — cli-edvibe
 
 ## Part 1: Test plan (written before implementation)
 
@@ -38,7 +38,7 @@ test_005_import_html_end_to_end — PASS
 
 ### Manual acceptance — real handout import (2026-09-04)
 ```
-cli-anything-edvibe --json import --html "handout.html"
+cli-edvibe --json import --html "handout.html"
 ```
 Result: material #1206362, course #2866588, lesson #19490961, section #96130097,
 5 Note exercises (Sections 1–4 + ADDITIONAL TEACHER RESOURCES), each carrying

@@ -9,8 +9,8 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from cli_anything.edvibe.core import importer  # noqa: E402
-from cli_anything.edvibe.core.client import client_time, EdvibeSession  # noqa: E402
+from cli_edvibe.core import importer  # noqa: E402
+from cli_edvibe.core.client import client_time, EdvibeSession  # noqa: E402
 
 SAMPLE = """<!doctype html><html><head><meta charset="utf-8"/>
 <title>ESL Teacher's Guide: Sample Lesson B1</title>
@@ -85,7 +85,7 @@ def test_session_file_roundtrip(tmp_path):
     s = EdvibeSession(session_path=path)
     assert os.path.exists(path) is False
     # simulate persisted token
-    import cli_anything.edvibe.core.client as c
+    import cli_edvibe.core.client as c
     c._save_session(path, {"token": "t1", "user": {"Id": 1}})
     s.token = "t1"
     assert os.path.exists(path)

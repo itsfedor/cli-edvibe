@@ -7,7 +7,7 @@ Content templates:
   note      {html, name, hidden?}
   text      {html, name?}
 Topic/article and hidden semantics verified empirically; see
-cli_anything/edvibe/tests/test_transfer_e2e.py.
+cli_edvibe/tests/test_transfer_e2e.py.
 """
 import datetime
 import json

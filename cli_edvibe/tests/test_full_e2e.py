@@ -16,7 +16,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from cli_anything.edvibe.core.client import EdvibeSession, EdvibeError  # noqa: E402
+from cli_edvibe.core.client import EdvibeSession, EdvibeError  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not (os.environ.get("EDVIBE_EMAIL") and os.environ.get("EDVIBE_PASSWORD")),
