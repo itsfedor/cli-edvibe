@@ -10,7 +10,7 @@
 **A reverse-engineered CLI for [edvibe.com](https://edvibe.com) — the ESL teaching platform with no public API.**
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=fff)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-20%20(15%20offline%20%2B%205%20live)-2ea043.svg)](#tests)
 [![Bundles an agent skill](https://img.shields.io/badge/bundles-agent%20skill-0075de.svg)](skills/cli-edvibe/SKILL.md)
 
@@ -221,4 +221,4 @@ and you'd like something changed here — open an issue.
 
 ## License
 
-[MIT](LICENSE)
+AGPL-3.0. See [LICENSE](LICENSE). If AGPL does not fit your use case, a commercial license is available — [COMMERCIAL.md](COMMERCIAL.md).
