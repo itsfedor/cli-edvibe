@@ -14,6 +14,11 @@
 [![Tests](https://img.shields.io/badge/tests-20%20(15%20offline%20%2B%205%20live)-2ea043.svg)](#tests)
 [![Bundles an agent skill](https://img.shields.io/badge/bundles-agent%20skill-0075de.svg)](skills/cli-edvibe/SKILL.md)
 
+> **Unofficial and unaffiliated.** This tool talks to Edvibe's private API,
+> which it reverse-engineered. It is not endorsed by, connected to, or supported
+> by Edvibe / ProgressMe. Use it with your own account and data, at your own
+> risk, and check that it fits the platform's terms for your use case.
+
 > **Note:** v1.0.0 renamed the project to **`cli-edvibe`** (previously `cli-anything-edvibe`). The old command name still works as an alias.
 
 Edvibe (formerly ProgressMe) keeps everything — materials, lessons, students,
