@@ -1,0 +1,21 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: syntax
+        run: python -m compileall -q cli_edvibe
+      - name: license drift
+        run: |
+          test -f LICENSE || { echo "LICENSE missing"; exit 1; }
+          grep -qiE 'Apache License|MIT License' LICENSE || { echo "unexpected LICENSE"; exit 1; }
+          grep -q 'License:' README.md || { echo "README has no license badge"; exit 1; }
