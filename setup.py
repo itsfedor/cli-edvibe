@@ -14,7 +14,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Fedor Molodtsov",
     url="https://github.com/itsfedor/cli-edvibe",
-    license="AGPL-3.0-only",
+    license="MIT",
     packages=find_packages(include=["cli_edvibe*"]),
     python_requires=">=3.9",
     install_requires=["requests>=2.28", "websocket-client>=1.6", "click>=8.0"],
@@ -27,7 +27,7 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU Affero General Public License v3",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
 )
