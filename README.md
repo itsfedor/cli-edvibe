@@ -27,9 +27,8 @@ project reverse-engineered that protocol and wrapped it in 57 commands, so a
 lesson can be authored as JSON and built in one call, and a student's voice
 recording can be transcribed before the next class.
 
-In daily use for a working ESL practice: 37 students, four levels of a grammar
-series, an IELTS course and a speaking course are all built and maintained
-through it.
+In daily use for a working ESL practice: four levels of a grammar series, an
+IELTS course and a speaking course are all built and maintained through it.
 
 > **What's in this release:** school analytics (`school …`), the teacher landing
 > page (`site …`), voice transcription (`audio transcribe`), read-only lesson
@@ -281,7 +280,8 @@ machine-readable output; a bare `cli-edvibe` opens a REPL.
 
 ## Agent skills
 
-The CLI is the hands; the skills are the instructions. Three ways to load them:
+The CLI is the hands; the skills are the instructions. One lives here, three in
+the same suite:
 
 | Skill | Lives in | What it teaches the agent |
 |---|---|---|
