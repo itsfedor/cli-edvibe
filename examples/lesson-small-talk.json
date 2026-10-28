@@ -1,0 +1,51 @@
+{
+  "lesson_name": "Small talk at work",
+  "description": "B1 · 60 min. Small talk before a meeting: openings, follow-ups, and how to leave politely.",
+  "sections": [
+    {"name": "Warm-Up", "exercises": [
+      {"type": "note", "name": "Today's goal", "color": "green",
+       "html": "<p><b>By the end of this lesson</b> you can start, keep and end a short conversation with a colleague — without awkward silence.</p>"},
+      {"type": "wordlist", "instruction": "Vocabulary we will use today",
+       "entries": [["small talk", {"0": "светская беседа"}], ["catch up", {"0": "обсудить новости"}],
+                   ["How come?", {"0": "Как так?"}], ["busy season", {"0": "горячая пора"}],
+                   ["by the way", {"0": "кстати"}], ["have to run", {"0": "мне пора бежать"}]]},
+      {"type": "match", "instruction": "Match the phrase with its meaning",
+       "pairs": [["small talk", "polite conversation about nothing important"],
+                 ["catch up", "talk about what happened recently"],
+                 ["have to run", "leave quickly"]]}
+    ]},
+    {"name": "Listening", "exercises": [
+      {"type": "button", "text": "Watch: small talk before a meeting", "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+      {"type": "truefalse", "instruction": "Watch again and decide: true or false",
+       "statements": [["The speaker starts with a question about the weekend.", true],
+                      ["She says the office is quiet in December.", false],
+                      ["She ends the conversation with “have to run”.", true]]},
+      {"type": "fillbox", "instruction": "Complete with the words from the box",
+       "sentences": ["— Hi! How was your [weekend]?", "— Busy, but good. We [moved] to a new flat.",
+                     "— Oh, nice! How [come] you chose that area?", "— Sorry, I [have] to run — meeting in two minutes."]}
+    ]},
+    {"name": "Practice", "exercises": [
+      {"type": "chooseoption", "instruction": "Choose the natural option",
+       "lines": ["— How's it [going*/going on/went]?", "— [By the way*/In the way/On the way], did you get my email?",
+                 "— I [have to run*/have run/have running] now, talk later!"]},
+      {"type": "filltyped", "instruction": "Write the missing word",
+       "sentences": ["Sorry, I'm [in] a hurry.", "We should [catch] up next week.",
+                     "How [come] you're working late again?"]},
+      {"type": "wordorder", "instruction": "Put the words in order",
+       "sentences": ["How/was/your/weekend", "We/should/catch/up/next/week", "Sorry/I/have/to/run"]},
+      {"type": "sortcolumns", "instruction": "Sort into two groups: opens a chat / ends a chat",
+       "columns": [{"title": "Opens", "words": ["How's it going", "How was your weekend"]},
+                   {"title": "Ends", "words": ["Have to run", "Talk later"]}]},
+      {"type": "unscramble", "instruction": "Build the word",
+       "words": [["colleague", "a person you work with"], ["meeting", "a work discussion with a time"]]},
+      {"type": "test", "instruction": "Quick check", "timer_min": 5,
+       "questions": [{"q": "A colleague says “How's it going?”. Best reply?", "options": ["Not much, you?", "Pretty good, busy week — you?", "I am fine thank you"], "correct": [1]},
+                     {"q": "You want to leave. What do you say?", "options": ["I go now.", "Sorry, have to run — talk later!", "Goodbye forever."], "correct": [1]}]}
+    ]},
+    {"name": "Your turn", "exercises": [
+      {"type": "topic", "instruction": "Speaking", "html": "<p>Tell your teacher about the last small talk you had at work: who, about what, how it ended.</p>"},
+      {"type": "writing", "instruction": "Write 5 sentences: how you would start and end a chat with a new colleague"},
+      {"type": "voice", "instruction": "Record 90 seconds: small talk with a colleague before a meeting", "seconds": 90}
+    ]}
+  ]
+}

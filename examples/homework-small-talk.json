@@ -1,0 +1,62 @@
+{
+  "lesson_id": 12345678,
+  "pupil_id": 23456789,
+  "class_id": 34567890,
+  "homework_lesson_id": 45678901,
+  "exercises": [
+    {
+      "type": "match",
+      "instruction": "Match the expression with the meaning",
+      "pairs": [
+        [
+          "carved",
+          "cut into stone"
+        ],
+        [
+          "sculptor",
+          "a person who makes statues"
+        ],
+        [
+          "Black Hills",
+          "the mountains in South Dakota"
+        ]
+      ]
+    },
+    {
+      "type": "fillbox",
+      "instruction": "Complete the summary with the words from the box",
+      "sentences": [
+        "Mount Rushmore was [carved] into the rock in the 1930s.",
+        "The [sculptor] worked on it for fourteen years.",
+        "Tourists come from all over the country to [see] the faces."
+      ]
+    },
+    {
+      "type": "truefalse",
+      "instruction": "True or false?",
+      "statements": [
+        [
+          "Mount Rushmore shows four presidents.",
+          true
+        ],
+        [
+          "The monument was finished in one year.",
+          false
+        ]
+      ]
+    },
+    {
+      "type": "chooseoption",
+      "instruction": "Choose the best option",
+      "lines": [
+        "The faces are [carved*/drawn/painted] into the mountain.",
+        "It took [14*/4/40] years to finish."
+      ]
+    },
+    {
+      "type": "voice",
+      "instruction": "Answer in 90 seconds: why do people visit Mount Rushmore?",
+      "seconds": 90
+    }
+  ]
+}
