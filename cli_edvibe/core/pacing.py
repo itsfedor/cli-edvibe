@@ -46,10 +46,10 @@ class Pacer:
         self._stamps = [t for t in self._stamps if now - t < 3600]
         if len(self._stamps) >= self.hourly_cap:
             raise PaceLimitError(
-                f"Hourly call cap ({self.hourly_cap} calls/hour) reached - "
-                f"this is deliberate, so the traffic looks like one teacher "
-                f"working manually. Continue later (or raise EDVIBE_PACE_CAP "
-                f"for tests).")
+                f"Лимит {self.hourly_cap} запросов в час достигнут — это "
+                f"сделано специально, чтобы аккаунт выглядел как обычная "
+                f"работа учителя. Продолжите позже (или сдвиньте "
+                f"EDVIBE_PACE_CAP для тестов).")
         delay = random.uniform(self.min_interval, self.max_interval)
         elapsed = now - self._last
         if elapsed < delay:

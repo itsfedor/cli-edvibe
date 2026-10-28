@@ -85,8 +85,8 @@ class EdvibeSession:
 
     def __init__(self, email=None, password=None, domain="edvibe.com",
                  session_path=None, ws_base=WS_BASE):
-        self.email = email
-        self.password = password
+        self.email = email or os.environ.get("EDVIBE_EMAIL")
+        self.password = password or os.environ.get("EDVIBE_PASSWORD")
         self.domain = domain
         self.session_path = session_path or SESSION_DEFAULT
         self.ws_base = ws_base
@@ -260,6 +260,198 @@ class EdvibeSession:
             raise EdvibeError(f"Book {book_id} has no course; cannot add lessons")
         return courses[0].get("Id")
 
+    def find_book(self, name):
+        """Find a personal/school book by exact name (case-insensitive).
+        Returns the raw Book dict or None."""
+        needle = (name or "").strip().casefold()
+        for it in self.list_materials(take=200):
+            b = it.get("Book") or {}
+            if (b.get("Name") or "").strip().casefold() == needle:
+                return b
+        return None
+
+    # -------------------------------------------------------- library folders
+    def list_folders(self, take=200):
+        """Library folders («папки») with ids and material counts.
+
+        Folders are rows of GetPersonalBooks (they appear there instead of the
+        books they contain); a folder's books are NOT in the top-level list."""
+        out = []
+        for it in self.list_materials(take=take):
+            f = it.get("Folder")
+            if isinstance(f, dict) and f.get("Id"):
+                out.append({
+                    "id": f.get("Id"),
+                    "name": f.get("Name"),
+                    "count": f.get("CountMaterials") or f.get("Count") or 0,
+                    "is_mine": f.get("IsMyFolder"),
+                    "is_school": f.get("IsSchoolFolder"),
+                    "order": f.get("OrderIndex"),
+                })
+        return out
+
+    def find_folder(self, folder_id=None, name=None):
+        """A library folder by id or exact name; None when there is no match."""
+        needle = (name or "").strip().casefold()
+        for f in self.list_folders():
+            if folder_id is not None and f["id"] == folder_id:
+                return f
+            if needle and (f.get("name") or "").strip().casefold() == needle:
+                return f
+        return None
+
+    def folder_books(self, folder_id, sort_class=0, invert=False):
+        """The books inside a folder (BookWsController.GetSchoolBooks)."""
+        resp = self.rpc("BookWsController", "GetSchoolBooks", "Books",
+                        {"FolderId": folder_id, "Domain": self.domain,
+                         "SortClass": sort_class, "IsInversion": invert})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"GetSchoolBooks failed: {resp.get('ErrorMessage')}")
+        val = resp.get("Value") or {}
+        items = val.get("Items", []) if isinstance(val, dict) else (val or [])
+        return [it.get("Book") or it for it in (items or [])]
+
+    def book_location(self, book_id):
+        """Where a book currently lives: {'book', 'folder_id', 'folder_name'}.
+
+        Searches the top level first (unfiled books), then every folder.
+        folder_id 0 = no folder; book None = not found in personal materials."""
+        for it in self.list_materials(take=400):
+            b = it.get("Book")
+            if isinstance(b, dict) and b.get("Id") == book_id:
+                return {"book": b, "folder_id": b.get("FolderId") or 0,
+                        "folder_name": None}
+        for f in self.list_folders():
+            for b in self.folder_books(f["id"]):
+                if b.get("Id") == book_id:
+                    return {"book": b, "folder_id": f["id"],
+                            "folder_name": f.get("name")}
+        return {"book": None, "folder_id": 0, "folder_name": None}
+
+    def move_book_to_folder(self, book_id, folder_id):
+        """Move a material (Book) into a library folder.
+
+        FolderBookWsController.AddBookToFolder {FolderId, BookId} (ProjectName
+        "Books", returns bool) - the UI's "move to folder". A book lives in ONE
+        folder (Book.FolderId); it disappears from the GetPersonalBooks top
+        level and shows up under the folder instead."""
+        resp = self.rpc("FolderBookWsController", "AddBookToFolder", "Books",
+                        {"FolderId": folder_id, "BookId": book_id})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"AddBookToFolder failed: {resp.get('ErrorMessage')} "
+                              f"({resp.get('ErrorCode')})")
+        return bool(resp.get("Value"))
+
+    def book_courses(self, book_id):
+        """Book sections (courses). For a grouped book these are the
+        user-visible «Разделы» ordered by OrderIndex."""
+        resp = self.rpc("CourseWsController", "GetBookCourses", "Books",
+                        {"BookId": book_id, "TeacherId": self.user.get("Id"),
+                         "Domain": self.domain})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"GetBookCourses failed: {resp.get('ErrorMessage')}")
+        return resp.get("Value") or []
+
+    def enable_grouping(self, book_id, name=None):
+        """Turn on book sections («Разделы») = IsEnableGroupingLessons via
+        BookUpsert with the existing Id. Idempotent."""
+        book = self.rpc("BookWsController", "GetBook", "Books",
+                        {"BookId": book_id, "Domain": self.domain}).get("Value") or {}
+        if not book:
+            raise EdvibeError(f"book {book_id} not found")
+        if book.get("IsEnableGroupingLessons"):
+            return True
+        payload = {
+            "Id": book_id, "Name": name or book.get("Name"),
+            "LanguageId": book.get("LanguageId") or 1,
+            "Description": book.get("Description") or "",
+            "SchoolId": book.get("SchoolId") or self.user.get("SchoolId"),
+            "IsEnableGroupingLessons": True,
+            "NoPhotoColor": book.get("NoPhotoColor") or 2,
+            "Tags": {"BookId": book_id, "TagAge": [], "TagLevel": [],
+                     "TagType": []},
+            "IsCreateSchoolBook": True, "ClientTime": client_time(),
+            "DeviceType": "desktop",
+        }
+        resp = self.rpc("BookWsController", "BookUpsert", "Books", payload)
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"grouping upsert failed: {resp.get('ErrorMessage')}")
+        return True
+
+    def ensure_book_section(self, book_id, name):
+        """Return the id of the book's section (course) named `name`,
+        creating it (with grouping enabled) when missing."""
+        self.enable_grouping(book_id)
+        courses = self.book_courses(book_id)
+        for c in courses:
+            if (c.get("Name") or "").strip().casefold() == name.strip().casefold():
+                return c.get("Id")
+        order = max([c.get("OrderIndex", 0) for c in courses] + [0]) + 1
+        resp = self.rpc("CourseWsController", "PersonalCourseUpsert", "Books",
+                        {"Id": 0, "Name": name, "OrderIndex": order,
+                         "SchoolId": self.user.get("SchoolId") or 9419,
+                         "BookId": book_id, "NoPhotoColor": 2})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"PersonalCourseUpsert failed: {resp.get('ErrorMessage')}")
+        val = resp.get("Value") or {}
+        if val.get("Id"):
+            return val["Id"]
+        for c in self.book_courses(book_id):
+            if (c.get("Name") or "").strip().casefold() == name.strip().casefold():
+                return c.get("Id")
+        raise EdvibeError(f"section '{name}' not created")
+
+    def change_exercise_images(self, exercise_id, images, full_image_url=None):
+        """Attach image(s) to an existing (Pictures/GIF/Label) exercise via the
+        external-URL flow. The server builds the full image model - this is
+        what makes the picture render (raw <img> in notes is stripped).
+
+        `images`: one URL or a list of URLs (order = display order, pairs with
+        the exercise's Descriptions / label items)."""
+        if isinstance(images, str):
+            images = [images]
+        payload = {"ExerciseId": exercise_id, "Images": [{
+            "ImageUrl": url, "FullImageUrl": full_image_url or url,
+            "ExternalImageUrl": url, "ImageId": 0, "FullImageId": 0}
+            for url in images]}
+        resp = self.rpc("SaveExerciseWsController", "ChangeExerciseImages",
+                        "Exercises", payload)
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"ChangeExerciseImages failed: {resp.get('ErrorMessage')}")
+        return resp.get("Value")
+
+    def change_exercise_audios(self, exercise_id, file_ids):
+        """Bind uploaded audio files to an Audio (Type 4) exercise.
+
+        The UI flow: SaveExercise with Audios[{Title,Script,Url}] from the
+        media upload, then SaveExerciseWsController.ChangeExerciseAudios
+        {ExerciseId, Ids:[fileId]} - the server assembles the full audio
+        models (FileId/Url/Timestamps)."""
+        if isinstance(file_ids, (int, str)):
+            file_ids = [file_ids]
+        payload = {"ExerciseId": int(exercise_id),
+                   "Ids": [int(i) for i in file_ids]}
+        resp = self.rpc("SaveExerciseWsController", "ChangeExerciseAudios",
+                        "Exercises", payload)
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"ChangeExerciseAudios failed: {resp.get('ErrorMessage')}")
+        return resp.get("Value")
+
+    def attach_audio_files(self, exercise_id, paths, log=None):
+        """Upload local audio file(s) (media type 10) and bind them to the
+        exercise. Returns the uploaded media dicts."""
+        uploaded = []
+        for p in paths:
+            data = self.upload_media_file(p, file_type=10)
+            uploaded.append(data)
+        ids = [d.get("Id") for d in uploaded if d.get("Id")]
+        if not ids:
+            raise EdvibeError("attach_audio_files: no file ids after upload")
+        self.change_exercise_audios(exercise_id, ids)
+        if log:
+            log(f"   ~ bound {len(ids)} audio file(s) to #{exercise_id}")
+        return uploaded
+
     def list_lessons(self, course_id):
         resp = self.rpc("LessonWsController", "GetCourseLessons", "Books",
                         {"CourseId": course_id})
@@ -361,6 +553,97 @@ class EdvibeSession:
         if not resp.get("IsSuccess"):
             raise EdvibeError(f"SaveExercise failed: {resp.get('ErrorMessage')}")
         return resp.get("Value")
+
+    def delete_exercise(self, exercise_id, lesson_id, section_id):
+        """Remove an exercise from a lesson section (rebuild pipelines)."""
+        payload = {"ExerciseId": int(exercise_id), "LessonId": int(lesson_id),
+                   "LessonSectionId": int(section_id)}
+        resp = self.rpc("SaveExerciseWsController", "DeleteExercise",
+                        "Exercises", payload)
+        ok = (isinstance(resp, dict) and resp.get("ErrorCode") == 0
+              and resp.get("Value"))
+        if not ok:
+            raise EdvibeError(
+                "DeleteExercise failed: %s" % (resp.get("ErrorMessage")
+                                               if isinstance(resp, dict)
+                                               else resp))
+        return resp.get("Value")
+
+    def upload_media_file(self, path, file_type=8):
+        """Upload a local file to the account's media storage (media-files
+        REST, header `Authorization: <Auth-Token>` - verified working from a
+        plain python client, no browser needed). file_type 8 =
+        LessonExerciseImages -> the file lands at
+        media-a.edvibe.com/files/LessonExerciseImages/<uuid>.<ext>, ready for
+        inline `<!--IMG:URL;...-->` blocks. Returns {'Id','Url','Key'}."""
+        import mimetypes
+        if not self.token:
+            self.authenticate()
+        name = os.path.basename(path)
+        ctype = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        last = None
+        for host in ("media-files-a.edvibe.com", "media-files-b.edvibe.com"):
+            try:
+                with open(path, "rb") as f:
+                    r = requests.post(
+                        "https://%s/api/MediaFile/create" % host,
+                        headers={"Authorization": self.token, "User-Agent": UA},
+                        files={"file": (name, f, ctype)},
+                        data={"type": str(int(file_type))}, timeout=180)
+                data = r.json()
+                if data.get("IsSuccess"):
+                    return data["Data"]
+                last = data.get("ErrorMessage")
+            except Exception as exc:  # noqa: BLE001 - try the mirror host
+                last = str(exc)
+        raise EdvibeError("upload_media_file failed: %s" % last)
+
+    def set_book_cover(self, book_id, image_path):
+        """Set a book cover image (the 'Cover' field in Edit material).
+
+        Upload the file as Books media (file_type 24) then call
+        BookWsController.ChangeImageIdBook with {FileId, FileUrl, EntityId}.
+        NOTE: the target book goes into **EntityId** - passing BookId/Id is
+        rejected with 'Book not found'. Verified end-to-end 2026-09-17.
+        Returns {'ImageId', 'Image'}.
+        """
+        data = self.upload_media_file(image_path, file_type=24)
+        resp = self.rpc("BookWsController", "ChangeImageIdBook", "Books",
+                        {"FileId": data.get("Id"), "FileUrl": data.get("Url"),
+                         "EntityId": book_id})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError("ChangeImageIdBook failed: %s" % resp.get("ErrorMessage"))
+        return {"ImageId": data.get("Id"), "Image": data.get("Url")}
+
+    def set_section_icon(self, course_id, image_path):
+        """Set the icon (avatar) shown next to a book SECTION (course).
+
+        Book sections are courses: the avatar is rendered from ImageUrl in the
+        UI (.avatar-box background-image, 64px round). Upload the icon as Books
+        media (file_type 24) then CourseWsController.ChangeImageIdCourse with
+        {FileId, FileUrl, EntityId}. Verified end-to-end Sep 2026.
+        """
+        data = self.upload_media_file(image_path, file_type=24)
+        resp = self.rpc("CourseWsController", "ChangeImageIdCourse", "Books",
+                        {"FileId": data.get("Id"), "FileUrl": data.get("Url"),
+                         "EntityId": course_id})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError("ChangeImageIdCourse failed: %s" % resp.get("ErrorMessage"))
+        return {"ImageId": data.get("Id"), "Image": data.get("Url")}
+
+    def set_lesson_icon(self, lesson_id, image_path):
+        """Set the icon (avatar) of a lesson (shown at 40px in book lists).
+
+        Same pattern as the section icon but LessonWsController.ChangeImageLesson
+        {FileId, FileUrl, EntityId}. Verified end-to-end Sep 2026.
+        """
+        data = self.upload_media_file(image_path, file_type=24)
+        resp = self.rpc("LessonWsController", "ChangeImageLesson", "Books",
+                        {"FileId": data.get("Id"), "FileUrl": data.get("Url"),
+                         "EntityId": lesson_id})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError("ChangeImageLesson failed: %s" % resp.get("ErrorMessage"))
+        return {"ImageId": data.get("Id"), "Image": data.get("Url")}
 
     # ------------------------------------------------- school / students
     def list_pupils(self, search=None, take=15, skip=0):
@@ -466,6 +749,20 @@ class EdvibeSession:
         val = resp.get("Value") or {}
         return val.get("Items", []) if isinstance(val, dict) else val
 
+    def load_homework_sheet(self, lesson_id, pupil_id, class_id,
+                            homework_lesson_id):
+        """Raw LoadHomeworkGroupExercises Value: {Items, CompleteStatus, ...}.
+        The Items carry the pupil's SUBMITTED answers (voice-recording mp3
+        URL / essay text / typed answers) — see core/homework_answers.py."""
+        resp = self.rpc("HomeworkWsController", "LoadHomeworkGroupExercises",
+                        "Homework", {"LessonId": lesson_id, "PupilId": pupil_id,
+                                     "ClassId": class_id,
+                                     "HomeworkLessonId": homework_lesson_id})
+        if not resp.get("IsSuccess"):
+            raise EdvibeError(f"LoadHomeworkGroupExercises failed: {resp.get('ErrorMessage')}")
+        val = resp.get("Value") or {}
+        return val if isinstance(val, dict) else {}
+
     def save_homework_exercise(self, view, homework_lesson_id, number=None):
         """Save an ExerciseView INTO a pupil's homework sheet (homework mode:
         HomeworkLessonId + inHomework=true, no LessonSectionId/LessonId)."""
@@ -559,6 +856,20 @@ class EdvibeSession:
             if not sec.get("IsHomework"):
                 return sec.get("Id")
         return None
+
+    def homework_section_id(self, lesson_id):
+        """The lesson's built-in Homework section id (the attach pool).
+
+        Exercises saved with this section id are the lesson's homework
+        exercises: they load back via LoadExercises and can be attached to
+        any pupil's homework sheet (AddExercisesToHomework)."""
+        lesson = self.get_lesson(lesson_id) or {}
+        hw = (lesson.get("HomeworkSection") or {}).get("Id")
+        if not hw:
+            for sec in (lesson.get("Sections") or []):
+                if sec.get("IsHomework"):
+                    return sec.get("Id")
+        return hw
 
 
     def import_html(self, html_file, material_name=None, lesson_name="Lesson 1",

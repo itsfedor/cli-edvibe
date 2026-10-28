@@ -3,10 +3,10 @@
 Spec v1 (JSON) — mirrors the lesson-spec exercise dicts:
 
     {
-      "lesson_id": 12345678,           # the lesson the homework belongs to
-      "pupil_id": 23456789,            # student (pupil) id
-      "class_id": 34567890,            # class/group id
-      "homework_lesson_id": 45678901,  # homework object id (GetHomeworkLessons)
+      "lesson_id": 19605483,           # the lesson the homework belongs to
+      "pupil_id": 3307590,             # student (pupil) id
+      "class_id": 2135048,             # class/group id
+      "homework_lesson_id": 21038112,  # homework object id (GetHomeworkLessons)
       "exercises": [
         {"type": "match",  "instruction": "Match the words with their definitions.",
          "pairs": [["term", "definition"], ...]},
@@ -116,6 +116,99 @@ def _normalize_for_homework(view, etype, homework_lesson_id, number):
         t["IsEnabledPoints"] = False
         view["Test"] = t
     return view
+
+
+# ------------------------------------------------- lesson homework pool
+def spec_exercises(spec):
+    """Exercises of an `homework add` spec OR a `lesson build` spec.
+
+    Accepts {"exercises": [...]} (homework-spec shape) or {"sections":
+    [{"name": "Homework"|"...", "exercises": [...]}]} (lesson-spec shape;
+    the Homework-named section is preferred, else every section is merged).
+    """
+    if not isinstance(spec, dict):
+        raise ValueError("spec must be a JSON object")
+    if isinstance(spec.get("exercises"), list) and spec["exercises"]:
+        return spec["exercises"]
+    sections = spec.get("sections") or []
+    if not isinstance(sections, list) or not sections:
+        raise ValueError("spec needs 'exercises' or a 'sections' list")
+    hw = [s for s in sections
+          if (s.get("name") or "").strip().casefold() in ("homework", "home work")]
+    chosen = hw[0] if hw else None
+    if chosen is None:
+        out = []
+        for s in sections:
+            out.extend(s.get("exercises") or [])
+        return out
+    return chosen.get("exercises") or []
+
+
+def plan_in_lesson(session, lesson_id, exercises, reuse=True):
+    """Read-only: what would create_in_lesson do? (no writes)"""
+    section_id = session.homework_section_id(lesson_id)
+    if not section_id:
+        raise ValueError(f"lesson {lesson_id} has no Homework section")
+    existing = session.load_exercises(section_id, lesson_id)
+    by_key = {}
+    for e in existing:
+        by_key.setdefault((e.get("Type"), (e.get("Name") or "").strip()), e.get("Id"))
+    plan = {"lesson_id": lesson_id, "section_id": section_id,
+            "existing_count": len(existing), "to_create": [], "to_reuse": []}
+    for ex in exercises:
+        etype = LS.norm_type(ex.get("type"))
+        view = LS._build_one(ex, etype, 0, lesson_id, section_id)
+        key = (view.get("Type"), (view.get("Name") or "").strip())
+        if reuse and key in by_key:
+            plan["to_reuse"].append({"id": by_key[key], "type": etype,
+                                     "name": LS.label(ex)})
+        else:
+            plan["to_create"].append({"type": etype, "name": LS.label(ex)})
+    return plan
+
+
+def create_in_lesson(session, lesson_id, exercises, reuse=True, log=None):
+    """Save spec exercises into the lesson's Homework section (the pool that
+    `homework give`/`attach` push to pupils).
+
+    With reuse=True (default) an exercise whose (Type, Name) already exists in
+    the homework section is REUSED instead of duplicated — re-running the same
+    spec for another pupil attaches the same exercises. Idempotent."""
+    errs = [f"exercises[{j}]: unknown type '{ex.get('type')}'"
+            for j, ex in enumerate(exercises)
+            if not isinstance(ex, dict) or LS.norm_type(ex.get("type")) not in LS.VALID_TYPES]
+    if errs:
+        raise ValueError("spec invalid: " + "; ".join(errs))
+    section_id = session.homework_section_id(lesson_id)
+    if not section_id:
+        raise ValueError(f"lesson {lesson_id} has no Homework section "
+                         f"(open the lesson editor once to provision it)")
+    existing = session.load_exercises(section_id, lesson_id)
+    by_key = {}
+    for e in existing:
+        by_key.setdefault((e.get("Type"), (e.get("Name") or "").strip()), e.get("Id"))
+    counter = max([e.get("Number", 0) for e in existing] + [-1]) + 1
+    out = {"lesson_id": lesson_id, "section_id": section_id, "created": [],
+           "reused": [], "ids": []}
+    for j, ex in enumerate(exercises):
+        etype = LS.norm_type(ex.get("type"))
+        view = LS._build_one(ex, etype, counter, lesson_id, section_id)
+        key = (view.get("Type"), (view.get("Name") or "").strip())
+        if reuse and key in by_key:
+            eid = by_key[key]
+            out["reused"].append({"id": eid, "type": etype, "name": LS.label(ex)})
+            out["ids"].append(eid)
+            if log:
+                log(f"   = reused #{eid} {etype} " + (LS.label(ex) or "")[:60])
+            continue
+        saved = session.save_exercise(view, lesson_id, section_id)
+        eid = saved.get("Id") if isinstance(saved, dict) else saved
+        out["created"].append({"id": eid, "type": etype, "name": LS.label(ex)})
+        out["ids"].append(eid)
+        counter += 1
+        if log:
+            log(f"   + #{eid} {etype} " + (LS.label(ex) or "")[:60])
+    return out
 
 
 # --------------------------------------------------------------- executor

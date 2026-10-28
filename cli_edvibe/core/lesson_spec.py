@@ -4,7 +4,7 @@ The assistant (Hermes / Claude Code / Codex) drafts a lesson spec; this module
 executes it deterministically: sections + exercises of every supported type,
 saved over the verified SaveExercise RPC. Additive-only — never deletes.
 
-Spec v1 (exercise dicts shared with the homework spec):
+Spec v1 (full reference: teacher-kit skill, references/lesson-spec.md):
 
     {
       "lesson_name": "Present Perfect",          # used when creating a lesson
@@ -42,12 +42,29 @@ EXERCISE_ALIASES = {
     "words": "wordlist", "word_list": "wordlist",
     "quiz": "test",
     "watch": "button", "link": "button", "external": "button",
+    # new templates (docs: Lesson Builder 3.0 template list)
+    "letters": "unscramble", "build_word": "unscramble",
+    "listening": "audio", "audio_block": "audio",
+    "gif_block": "gif",
+    "label": "label", "labeldrag": "label", "label_drag": "label",
+    "labelfill": "labelfill", "label_fill": "labelfill",
+    "labelchoose": "labelchoose", "label_choose": "labelchoose",
+    "board": "miro", "miro_board": "miro",
+    "pdf": "googlepdf", "gdrive": "googlepdf", "gdoc": "googlepdf",
+    "word_wall": "wordwall", "learning_apps": "learningapps",
+    "learningapp": "learningapps",
+    "genially_block": "genially",
+    "bamboozle": "baamboozle", "baambozle": "baamboozle",
+    "quizlet_block": "quizlet",
 }
 
 VALID_TYPES = {
     "note", "text", "topic", "video", "wordlist", "writing", "match",
     "filltyped", "fillbox", "chooseoption", "wordorder", "sortcolumns",
-    "ordersentences", "truefalse", "test", "voice", "button",
+    "ordersentences", "truefalse", "test", "voice", "button", "pictures",
+    "unscramble", "audio", "gif", "label", "labelfill", "labelchoose",
+    "miro", "googlepdf", "wordwall", "learningapps", "genially",
+    "baamboozle", "quizlet",
 }
 
 REQUIRED_FIELDS = {
@@ -57,8 +74,20 @@ REQUIRED_FIELDS = {
     "chooseoption": ["lines"], "wordorder": ["sentences"],
     "sortcolumns": ["columns"], "ordersentences": ["sentences"],
     "truefalse": ["statements"], "test": ["questions"], "voice": [],
-    "button": ["link", "text"],
+    "button": ["link", "text"], "pictures": [], "unscramble": ["words"],
+    "audio": ["audios"], "gif": [], "label": ["items"],
+    "labelfill": ["items"], "labelchoose": ["items"],
+    "miro": ["link"], "googlepdf": ["link"], "wordwall": ["link"],
+    "learningapps": ["link"], "genially": ["link"], "baamboozle": ["link"],
+    "quizlet": ["link"],
 }
+
+# Exercise types that accept the "Execution Time" setting (TimerMinutes on
+# the ExerciseView; verified against the live exercises_shell bundle Sep/Oct 2026).
+TIMER_TYPES = {"filltyped", "fillbox", "chooseoption", "wordorder",
+               "sortcolumns", "ordersentences", "truefalse", "unscramble",
+               "match", "test", "writing", "label", "labelfill",
+               "labelchoose"}
 
 HOMEWORK_NAMES = {"homework", "домашка", "домашнее задание", "дз"}
 
@@ -138,7 +167,7 @@ def _build_one(ex, etype, number, lesson_id, section_id):
     hidden = bool(ex.get("hidden", False))
     if etype == "note":
         view = B.build_note(minify(ex["html"]), name=ex.get("name", ""),
-                            hidden=hidden)
+                            hidden=hidden, color=ex.get("color"))
     elif etype == "text":
         view = B.build_text(minify(ex["html"]), name=name)
     elif etype == "topic":
@@ -150,7 +179,8 @@ def _build_one(ex, etype, number, lesson_id, section_id):
         view = B.build_video(name, ex["link"])
     elif etype == "wordlist":
         entries = [(e[0], e[1]) for e in ex["entries"]]
-        view = B.build_wordlist(name, entries)
+        view = B.build_wordlist(name, entries,
+                                voice_language_id=int(ex.get("voice_language_id", 1)))
     elif etype == "writing":
         view = B.build_writing(name)
     elif etype == "match":
@@ -162,6 +192,10 @@ def _build_one(ex, etype, number, lesson_id, section_id):
                                 autocheck=bool(ex.get("autocheck", True)))
     elif etype == "button":
         view = B.build_button(name, ex["link"], ex["text"])
+    elif etype == "pictures":
+        view = B.build_pictures(name, ex.get("description", ""), number=number,
+                                layout=ex.get("layout", "vertical"),
+                                descriptions=ex.get("descriptions"))
     elif etype == "chooseoption":
         view = B.build_choose_option(name, ex["lines"])
     elif etype == "wordorder":
@@ -181,25 +215,82 @@ def _build_one(ex, etype, number, lesson_id, section_id):
         view = B.build_true_false(name, statements, not_stated=has_ns,
                                   autocheck=bool(ex.get("autocheck", True)))
     elif etype == "test":
-        qs = [{"q": q["q"], "options": q["options"], "correct": q["correct"]}
+        qs = [{"q": q["q"], "options": q["options"], "correct": q["correct"],
+               "points": q.get("points", 1.0)}
               for q in ex["questions"]]
-        view = B.build_test(name, qs, points=bool(ex.get("points", True)))
+        timer = ex.get("timer_min", ex.get("timer"))
+        view = B.build_test(name, qs, timer_min=timer,
+                            points=bool(ex.get("points", True)))
     elif etype == "voice":
         view = B._base(B.EX_VOICE, name, number)
-        rec = {"Text": ex.get("html", ""),
-               "RecordingDuration": int(ex.get("seconds", 120))}
+        seconds = max(30, min(180, int(ex.get("seconds", 120))))  # docs: 3 min max
+        rec = {"Text": ex.get("html", ""), "RecordingDuration": seconds}
         jd = json.loads(view["JsonData"])
         jd["AudioRecording"] = rec
         view["JsonData"] = json.dumps(jd, ensure_ascii=False)
         view["AudioRecording"] = rec
+    elif etype == "unscramble":
+        view = B.build_unscramble(name, ex["words"])
+    elif etype == "audio":
+        view = B.build_audio(name, ex["audios"])
+    elif etype == "gif":
+        view = B.build_gif(name, ex.get("description", ""))
+    elif etype in ("label", "labelfill", "labelchoose"):
+        mode = {"label": "drag", "labelfill": "fill",
+                "labelchoose": "choose"}[etype]
+        view = B.build_label_pictures(name, ex["items"], mode=mode)
+    elif etype in B._LINK_BLOCKS:
+        view = B.build_link_block(name, ex["link"], ex.get("text", ""),
+                                  block=etype)
     else:  # pragma: no cover - validate() guards this
         raise ValueError(f"unsupported type {etype}")
+    timer_min = ex.get("timer_min")
+    if timer_min is not None and etype in TIMER_TYPES:
+        # Execution Time: locks submission when the countdown ends.
+        view["TimerMinutes"] = max(1, min(120, int(timer_min)))
     if "show_number" in ex:
         view["IsShowExerciseNumber"] = bool(ex["show_number"])
     view["Number"] = number
     view["LessonId"] = lesson_id
     view["LessonSectionId"] = section_id
     return view
+
+
+# ------------------------------------------------------- post-save hooks
+def preupload_audio(session, ex, log=None):
+    """Upload local audio files of an `audio` spec item (media type 10) and
+    return their file ids; sets a['url'] so the saved view carries the URL."""
+    ids = []
+    for a in ex.get("audios", []):
+        path = a.get("file")
+        if path:
+            data = session.upload_media_file(path, file_type=B.MEDIA_AUDIO)
+            a["url"] = data.get("Url")
+            ids.append(data.get("Id"))
+            if log:
+                log(f"   ^ uploaded audio {a.get('title') or path}")
+    return ids
+
+
+def _attach_after_save(session, etype, ex, eid, audio_ids=None, log=None):
+    """Post-save bindings: images for pictures/gif/label (display order =
+    spec order) and uploaded audio files for the audio template."""
+    if not eid:
+        return
+    images = None
+    if etype in ("pictures", "gif"):
+        images = ex.get("images") or ([ex["image"]] if ex.get("image") else [])
+    elif etype in ("label", "labelfill", "labelchoose"):
+        images = [it.get("image") for it in ex.get("items", [])
+                  if it.get("image")]
+    if images:
+        session.change_exercise_images(eid, images)
+        if log:
+            log(f"   ~ attached {len(images)} image(s) to #{eid}")
+    if etype == "audio" and audio_ids:
+        session.change_exercise_audios(eid, audio_ids)
+        if log:
+            log(f"   ~ bound {len(audio_ids)} audio file(s) to #{eid}")
 
 
 # ----------------------------------------------------------------- executor
@@ -229,6 +320,16 @@ def build_lesson(session, spec, material_id=None, lesson_id=None, name=None,
         lesson = session.get_lesson(lesson_id)
 
     book_id = lesson.get("BookId") or material_id
+    if not book_id:
+        # GetLessonWithId does not expose BookId; resolve it from the preview
+        # (LessonUpsert with a null BookId fails with "Invalid request
+        # parameters" and silently drops the description update).
+        try:
+            prev = session.rpc("LessonWsController", "GetLessonPreview",
+                               "Books", {"LessonId": lesson_id})
+            book_id = (((prev.get("Value") or {}).get("Book")) or {}).get("Id")
+        except Exception:
+            book_id = None
     course_id = lesson.get("CourseId")
     existing_sections = lesson.get("Sections") or []
     hw_id = (lesson.get("HomeworkSection") or {}).get("Id")
@@ -261,7 +362,10 @@ def build_lesson(session, spec, material_id=None, lesson_id=None, name=None,
         ids = []
         for j, ex in enumerate(sec["exercises"]):
             etype = norm_type(ex.get("type"))
+            audio_ids = []
             try:
+                if etype == "audio":
+                    audio_ids = preupload_audio(session, ex, log=log)
                 view = _build_one(ex, etype, counter, lesson_id, target)
                 saved = session.save_exercise(view, lesson_id, target)
             except EdvibeError:
@@ -270,6 +374,8 @@ def build_lesson(session, spec, material_id=None, lesson_id=None, name=None,
                 raise ValueError(
                     f"section '{sname}' exercise {j} ({etype}): {exc}") from exc
             eid = saved.get("Id") if isinstance(saved, dict) else saved
+            _attach_after_save(session, etype, ex, eid, audio_ids=audio_ids,
+                               log=log)
             ids.append(eid)
             counter += 1
             if log:

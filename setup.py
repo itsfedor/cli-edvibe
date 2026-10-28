@@ -9,7 +9,7 @@ _long = (_here / "README.md").read_text(encoding="utf-8")
 setup(
     name="cli-edvibe",
     version="1.0.0",
-    description="Unofficial CLI for edvibe.com: lessons, homework and materials over the reverse-engineered WebSocket RPC",
+    description="Unofficial CLI for edvibe.com: lessons, homework, students, analytics over the reverse-engineered WebSocket RPC",
     long_description=_long,
     long_description_content_type="text/markdown",
     author="Fedor Molodtsov",
@@ -18,6 +18,12 @@ setup(
     packages=find_packages(include=["cli_edvibe*"]),
     python_requires=">=3.9",
     install_requires=["requests>=2.28", "websocket-client>=1.6", "click>=8.0"],
+    # Branding (covers, section/lesson tiles) is optional so a plain install
+    # stays at three dependencies.
+    extras_require={
+        "branding": ["pillow>=9.0"],
+        "render": ["pillow>=9.0", "playwright>=1.40"],
+    },
     entry_points={
         "console_scripts": [
             "cli-edvibe=cli_edvibe.edvibe_cli:cli",

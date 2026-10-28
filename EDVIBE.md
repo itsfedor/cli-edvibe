@@ -47,8 +47,31 @@
 - Exercise `Type 22` = Note: content block whose `Note.Text` holds arbitrary
   HTML (`<h3>/<p>/<ul>/<ol>/<em>...`), `Note.ShowToPupil:true`. This is the
   vehicle used to import HTML handouts.
-- Type map seen: 3 Videos, 5 Test, 6 MappingWords, 21 AddWordsToVocabulary,
-  22 Note, 25 Topic, 27 Images, 31/32 (misc).
+- Type map seen: 2 Images (carousel gallery), 3 Videos, 4 Audio, 5 Test,
+  6 MappingWords, 10 FillGaps-typed, 13 ChooseOption, 17 LabelPictures-drag,
+  21 AddWordsToVocabulary, 22 Note, 23 BuildWordFromLetters (unscramble),
+  25 Topic, 27 Pictures (vertical gallery), 30 AudioRecording (voice),
+  32 ImagesGif, 33 MiroBoard, 34 GooglePDF, 35 Wordwall, 36 Learningapps,
+  38 LabelPictures-fill, 39 LabelPictures-select, 41 Genially, 42 Baamboozle,
+  43 Quizlet.
+
+### Templates added Sep 2026 (docs + bundle recon, verified live)
+- Full template list from the official help center (intercom.help/edvibe/en,
+  "Lesson Builder 3.0"): 9 content templates, 14 exercise templates,
+  7 integrations, AI Assistant. Implemented in `core/builders.py`:
+  unscramble (23), audio (4), gif (32), label ×3 (17/38/39), integrations
+  (33/34/35/36/41/42/43), pictures carousel (2), note colour 0-4
+  (Blue/Yellow/Green/Red/Gray), test timer 1-90 min + per-question points ≤5,
+  multilingual wordlist, voice `seconds`.
+- Post-save attach flow: `ChangeExerciseImages` accepts a LIST of external
+  URLs (pictures/gif/label blocks); audio = upload (MediaFile type 10) then
+  `ChangeExerciseAudios` with the file ids.
+- `Statistics`/`ScoringType`/`ConfigurationJson` on a test exercise are
+  server-managed and silently dropped by SaveExercise (verified in three
+  shapes) — per-question points live on `Test.Questions[].Points`.
+- Label-pictures payload quirks: drag mode joins answers with `/` and escapes
+  literal slashes as `&#47;`; select mode keeps plain `/` as the option
+  separator with `*` marking the correct option.
 
 ## GUI action -> harness command mapping
 | UI action | API | CLI |
